@@ -19,4 +19,27 @@ public class ClienteDaoImpl implements IClienteDao{
     public List<Cliente> findAll() {
         return manager.createQuery("FROM Cliente ").getResultList();
     }
+
+    @Override
+    @Transactional
+    public void save(Cliente cliente) {
+        if (cliente.getId()!=null && cliente.getId()>0){
+            manager.merge(cliente);
+        }else {
+            manager.merge(cliente);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Cliente findOne(Long id) {
+        return manager.find(Cliente.class,id);
+    }
+
+    @Transactional()
+    @Override
+    public void delete(Long id) {
+        Cliente cliente = findOne(id);
+        manager.remove(cliente);
+    }
 }

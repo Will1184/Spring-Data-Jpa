@@ -1,11 +1,12 @@
 package com.will1184.springbootdatajpa.app.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import org.springframework.format.annotation.DateTimeFormat;
 
-import javax.xml.crypto.Data;
-import java.time.LocalDate;
 import java.util.Date;
-import java.util.Locale;
 
 @Entity
 @Table(name = "clientes")
@@ -14,11 +15,18 @@ public class Cliente {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private static final long serialVersionUID =1L;
+    @NotEmpty
     private String nombre;
+    @NotEmpty
     private String apellido;
+    @Email
+    @NotEmpty
     private String email;
+
+    @NotNull
     @Column(name = "create_at")
     @Temporal(TemporalType.DATE)
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date createAt;
 
     public Cliente() {
