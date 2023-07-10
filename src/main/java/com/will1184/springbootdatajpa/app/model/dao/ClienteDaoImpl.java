@@ -1,6 +1,6 @@
 package com.will1184.springbootdatajpa.app.model.dao;
 
-import com.will1184.springbootdatajpa.app.entity.Cliente;
+import com.will1184.springbootdatajpa.app.model.entity.Cliente;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;

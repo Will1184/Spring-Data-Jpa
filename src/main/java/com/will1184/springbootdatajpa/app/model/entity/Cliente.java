@@ -1,4 +1,4 @@
-package com.will1184.springbootdatajpa.app.entity;
+package com.will1184.springbootdatajpa.app.model.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;

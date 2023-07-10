@@ -1,6 +1,6 @@
 package com.will1184.springbootdatajpa.app.model.dao;
 
-import com.will1184.springbootdatajpa.app.entity.Cliente;
+import com.will1184.springbootdatajpa.app.model.entity.Cliente;
 
 import java.util.List;
 
