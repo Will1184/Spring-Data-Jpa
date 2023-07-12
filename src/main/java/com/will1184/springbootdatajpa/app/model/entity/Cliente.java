@@ -15,6 +15,7 @@ public class Cliente {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private static final long serialVersionUID =1L;
+    private String foto;
     @NotEmpty
     private String nombre;
     @NotEmpty
@@ -32,8 +33,9 @@ public class Cliente {
     public Cliente() {
     }
 
-    public Cliente(Long id, String nombre, String apellido, String email, Date createAt) {
+    public Cliente(Long id, String foto, String nombre, String apellido, String email, @NotNull Date createAt) {
         this.id = id;
+        this.foto = foto;
         this.nombre = nombre;
         this.apellido = apellido;
         this.email = email;
@@ -78,5 +80,13 @@ public class Cliente {
 
     public void setCreateAt(Date createAt) {
         this.createAt = createAt;
+    }
+
+    public String getFoto() {
+        return foto;
+    }
+
+    public void setFoto(String foto) {
+        this.foto = foto;
     }
 }

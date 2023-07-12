@@ -13,8 +13,13 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.support.SessionStatus;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 
 @Controller
@@ -23,6 +28,18 @@ public class ClienteController {
     @Autowired
     private IClienteService clienteService;
 
+    @GetMapping(value = "/ver/{id}")
+    public String ver(@PathVariable(value = "id") Long id, Map<String,Object> model,
+                      RedirectAttributes flash){
+        Cliente cliente = clienteService.findOne(id);
+        if(cliente==null){
+            flash.addFlashAttribute("error","El cliente no existe");
+            return "redirect:/listar";
+        }
+        model.put("cliente",cliente);
+        model.put("Titulo","Detalle Cliente: "+cliente.getNombre());
+        return "ver";
+    }
     @GetMapping(value = "/listar")
     public String listar(@RequestParam(name = "page", defaultValue = "0") int page, Model model){
         Pageable pageRequest = PageRequest.of(page, 4);
@@ -42,10 +59,25 @@ public class ClienteController {
         return "form";
     }
     @PostMapping(value = "/form")
-    public String guardar(@Valid Cliente cliente, BindingResult result, Model model, RedirectAttributes flash, SessionStatus status){
+    public String guardar(@Valid Cliente cliente, BindingResult result, Model model, RedirectAttributes flash,
+                          SessionStatus status, @RequestParam("file")MultipartFile foto){
         if (result.hasErrors()){
             model.addAttribute("titulo","Formulario de Cliente");
             return "form";
+        }
+        if (!foto.isEmpty()){
+            String rootPath ="C://Temp//uploads";
+            try {
+                byte[] bytes=foto.getBytes();
+                Path rutaCompleta= Paths.get(rootPath+"//"+foto.getOriginalFilename());
+                Files.write(rutaCompleta,bytes);
+                flash.addAttribute("info","Se ha subido correctamente '"
+                        +foto.getOriginalFilename()+"'");
+                cliente.setFoto(foto.getOriginalFilename());
+            } catch (IOException e) {
+//                throw new RuntimeException(e);
+                e.printStackTrace();
+            }
         }
         String mensajeFlash=(cliente.getId() != null)? "Cliente editado con éxito": "Cliente creado con exito";
 
