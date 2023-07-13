@@ -4,10 +4,16 @@ import com.will1184.springbootdatajpa.app.model.entity.Cliente;
 import com.will1184.springbootdatajpa.app.model.service.IClienteService;
 import com.will1184.springbootdatajpa.app.util.paginable.PageRender;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -16,17 +22,40 @@ import org.springframework.web.bind.support.SessionStatus;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.UUID;
 
 @Controller
 @SessionAttributes("cliente")
 public class ClienteController {
+
     @Autowired
     private IClienteService clienteService;
+    private final static  String UPLOAD_FOLDER="/uploads";
+    private final Logger log= LoggerFactory.getLogger(getClass());
+    @GetMapping(value = "/upload/{filename:.+}")
+    public ResponseEntity<Resource> verFoto(@PathVariable String filename){
+        Path pathFoto = Paths.get(UPLOAD_FOLDER).resolve(filename).toAbsolutePath();
+        log.info("PathFoto: "+pathFoto);
+        Resource resource= null;
+        try {
+            resource= new UrlResource(pathFoto.toUri());
+            if (!resource.exists() && !resource.isReadable()){
+                throw  new RuntimeException(
+                        "Error: No se puede cargar la imagen "+pathFoto.toString());
+            }
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,"attachment;filename=\""
+                +resource.getFilename()+"\"").body(resource);
+    }
 
     @GetMapping(value = "/ver/{id}")
     public String ver(@PathVariable(value = "id") Long id, Map<String,Object> model,
@@ -66,24 +95,39 @@ public class ClienteController {
             return "form";
         }
         if (!foto.isEmpty()){
-            String rootPath ="C://Temp//uploads";
+
+            if (cliente.getId()!=null && cliente.getId()>0 &&
+                    cliente.getFoto()!=null && cliente.getFoto().length()>0) {
+                Path rootPath = Paths.get(UPLOAD_FOLDER).resolve(cliente.getFoto()).toAbsolutePath();
+                File archivo = rootPath.toFile();
+                if (archivo.exists() && archivo.canRead()) {
+                    if (archivo.delete()) {
+                        archivo.delete();
+                    }
+
+                }
+            }
+            String uniqueFileName = UUID.randomUUID().toString()+"-"+foto.getOriginalFilename();
+            Path rootPath = Paths.get(UPLOAD_FOLDER).resolve(uniqueFileName);
+            Path rootAbsolute = rootPath.toAbsolutePath();
+            log.info("rootPath: "+rootPath);
+            log.info("rootAbsolutePath: "+rootAbsolute);
             try {
-                byte[] bytes=foto.getBytes();
-                Path rutaCompleta= Paths.get(rootPath+"//"+foto.getOriginalFilename());
-                Files.write(rutaCompleta,bytes);
+                Files.copy(foto.getInputStream(),rootAbsolute);
                 flash.addAttribute("info","Se ha subido correctamente '"
-                        +foto.getOriginalFilename()+"'");
-                cliente.setFoto(foto.getOriginalFilename());
+                        +uniqueFileName+"'");
+                cliente.setFoto(uniqueFileName);
+                String mensajeFlash=(cliente.getId() != null)? "Cliente editado con éxito": "Cliente creado con exito";
+
+                this.clienteService.save(cliente);
+                status.setComplete();
+                flash.addFlashAttribute("success", mensajeFlash);
             } catch (IOException e) {
 //                throw new RuntimeException(e);
                 e.printStackTrace();
             }
         }
-        String mensajeFlash=(cliente.getId() != null)? "Cliente editado con éxito": "Cliente creado con exito";
 
-        this.clienteService.save(cliente);
-        status.setComplete();
-        flash.addFlashAttribute("success", mensajeFlash);
         return "redirect:listar";
     }
 
@@ -106,8 +150,18 @@ public class ClienteController {
     @RequestMapping(value = "eliminar/{id}")
     public String eliminar(@PathVariable(value = "id") Long id , RedirectAttributes flash) {
         if (id > 0) {
+            Cliente cliente = clienteService.findOne(id);
             clienteService.delete(id);
             flash.addFlashAttribute("success", "Cliente Eliminado con Exito");
+            Path rootPath=Paths.get(UPLOAD_FOLDER).resolve(cliente.getFoto()).toAbsolutePath();
+            File archivo = rootPath.toFile();
+            if (archivo.exists() && archivo.canRead()){
+                if (archivo.delete()){
+                    flash.addFlashAttribute("info","Foto eliminada"+cliente.getFoto()+
+                            " se elimino correctamente");
+                }
+            }
+
         }
         return "redirect:/listar";
     }
